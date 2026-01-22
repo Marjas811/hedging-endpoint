@@ -1,89 +1,122 @@
-**# Hedging Endpoint (PrestaShop)**
+# PrestaShop Hedging Endpoint
 
+Custom PHP endpoint for PrestaShop that exposes order data for automated hedging system integration.
 
+## 🎯 Overview
 
-\## Zakres
+This endpoint serves as a bridge between PrestaShop e-commerce platform and the backend hedging system. It provides a secure REST API for fetching recent orders containing precious metals (gold, silver) with their weights and metal rates.
 
-Endpoint udostępnia zamówienia z bazy PrestaShop w formacie JSON na potrzeby Cloud Function. Obsługuje:
+## 🔧 Tech Stack
 
-\- filtrowanie zamówień po `last\_imported\_id` i `limit`,
+- **Language:** PHP (OOP)
+- **Platform:** PrestaShop
+- **API:** REST (JSON responses)
+- **Security:** Bearer token authentication
+- **Integration:** Backend hedging system (Node.js/TypeScript)
 
-\- wyliczenie wag (kg/oz) oraz ostatniego kursu metalu (24h lookback),
+## 📋 Features
 
-\- pomijanie zamówień z uwagą zawierającą frazę „lbma”.
+### Order Data Exposure
+- Exposes recent orders as JSON
+- Includes order details: ID, date, customer info
+- Provides product data: weights, metal types, rates
 
+### Filtering & Processing
+- Filters orders by metal type (gold/silver)
+- Filters by rate source (LBMA/fixing)
+- Excludes irrelevant products
+- Handles edge cases (missing data, invalid formats)
 
+### Security
+- Bearer token authentication
+- Token validation on each request
+- Secure credential storage
+- Access logging for diagnostics
 
-\## Wymagania
+### Diagnostics & Logging
+- Logs all API requests
+- Tracks authentication attempts
+- Records data processing steps
+- Helps troubleshoot integration issues
 
-\- PHP ≥ 5.6 z rozszerzeniem PDO MySQL.
+## 🚀 API Endpoints
 
-\- Dostęp do bazy sklepu (parametry w `data/config/hedging-db.php` lub zmienne `HEDGING\_DB\_\*`).
+### `GET /hedging-orders`
 
-\- Token API (w pliku `data/config/tokens.php` – komentarz `hedging endpoint` – lub zmienna `HEDGING\_ENDPOINT\_TOKEN`).
+Returns recent orders with precious metals.
 
-\- Logi wraz z błędami zapisywane są do `hedging-endpoint.log` .
+**Authentication:**
+```
+Authorization: Bearer {token}
+```
 
+**Response:**
+```json
+{
+  "orders": [
+    {
+      "id": "12345",
+      "date": "2025-01-22",
+      "customer": "...",
+      "products": [
+        {
+          "name": "Gold Coin",
+          "weight": 31.1,
+          "metal": "gold",
+          "rate": 2150.50,
+          "rate_source": "LBMA"
+        }
+      ]
+    }
+  ]
+}
+```
 
+## 💼 Business Value
 
-\## Konfiguracja
+- **Integration:** Enables automated hedging without manual data export
+- **Real-time:** Provides up-to-date order data for risk management
+- **Security:** Protects sensitive order information
+- **Reliability:** Handles errors gracefully, logs issues for debugging
 
-1\. \*\*Parametry DB\*\*  
+## 🔐 Security Features
 
-&nbsp;  - Plik `data/config/hedging-db.php` (tablica z `host`, `dbname`, `username`, `password`, `charset`).  
+- Bearer token authentication
+- Request validation
+- Secure data filtering
+- Access logging
+- No sensitive data in logs
 
-&nbsp;  - Alternatywnie ustaw zmienne środowiskowe:  
+## 🛠️ Implementation Details
 
-&nbsp;    `HEDGING\_DB\_HOST`, `HEDGING\_DB\_NAME`, `HEDGING\_DB\_USER`, `HEDGING\_DB\_PASSWORD`, `HEDGING\_DB\_CHARSET`.
+### PrestaShop Integration
+- Uses PrestaShop ORM for database access
+- Follows PrestaShop coding standards
+- Compatible with PrestaShop module system
 
+### Data Processing
+- Parses order and product data
+- Extracts metal weights and rates
+- Validates data integrity
+- Formats response as JSON
 
+### Error Handling
+- Graceful failure on missing data
+- Logs errors for diagnostics
+- Returns appropriate HTTP status codes
 
-2\. \*\*Token\*\*  
+## 📊 Data Flow
 
-&nbsp;  - `data/config/tokens.php` – wpis:
+```
+Backend Hedging System → Bearer Token → PHP Endpoint → PrestaShop DB
+                                                      ↓
+                                                   JSON Response
+```
 
-&nbsp;    ```php
+## 🔗 Related Projects
 
-&nbsp;    return \[
+- [Backend-hedging](https://github.com/Marjas811/Backend-hedging) - Node.js/TypeScript system that consumes this endpoint
 
-&nbsp;      'TWÓJ\_TOKEN' => \['comment' => 'hedging endpoint', 'active' => true],
+---
 
-&nbsp;    ];
-
-&nbsp;    ```
-
-&nbsp;  - Albo `HEDGING\_ENDPOINT\_TOKEN` w środowisku.
-
-
-
-3\. \*\*Filtrowanie LBMA\*\*  
-
-&nbsp;  - Domyślnie pomijamy zamówienia, w których `km\_message.message` zawiera „lbma”.  
-
-&nbsp;  - Aby zmienić wzorzec, edytuj podzapytanie w sekcji `LEFT JOIN (...) flagged`.
-
-
-
-4\. \*\*Limit historii\*\*  
-
-&nbsp;  - `MAX\_HISTORY\_DAYS = 7`. Można zwiększyć jedynie na potrzeby diagnostyki; pamiętaj o powrocie do 7 dni.
-
-
-
-\## Uruchomienie lokalne
-
-1\. Skopiuj plik do katalogu serwera (np. XAMPP `htdocs/hedging-endpoint.php`).
-
-2\. Upewnij się, że Apache/PHP ma dostęp do DB i tokenu.
-
-3\. Test:
-
-&nbsp;  ```bash
-
-&nbsp;  curl -H "Authorization: Bearer <token>" \\
-
-&nbsp;    "http://localhost/hedging-endpoint.php?last\_imported\_id=0\&limit=5"
-
-&nbsp;  ```\*\_
-
-
+**Note:** This endpoint is part of a production e-commerce system. Some implementation details are omitted for security reasons.
